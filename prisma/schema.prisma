@@ -1,0 +1,59 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  owners    Owner[]
+}
+
+model Owner {
+  id        String    @id @default(uuid())
+  name      String
+  phone     String
+  email     String?
+  street    String?
+  number    String?
+  complement  String?
+  neighborhood  String?
+  city      String?
+  state     String?
+  zipCode   String?
+  userId      String
+  user    User      @relation(fields: [userId], references: [id])
+  animals   Animal[]
+  createdAt DateTime @default(now())
+}
+
+model Animal {
+  id        String    @id @default(uuid())
+  name      String
+  species   String
+  breed     String?
+  ownerId   String
+  owner   Owner     @relation(fields: [ownerId], references: [id])
+  records   Record[]
+  createdAt DateTime @default(now())
+}
+
+model Record {
+  id        String  @id @default(uuid())
+  weight    String
+  medications String
+  dosage    String
+  notes     String
+  attendedAt  DateTime
+  animalId  String
+  animal    Animal    @relation(fields: [animalId], references: [id])
+  createdAt DateTime @default(now())
+}

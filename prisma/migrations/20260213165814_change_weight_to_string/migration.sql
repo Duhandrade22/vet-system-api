@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Record" ALTER COLUMN "weight" SET DATA TYPE TEXT;
