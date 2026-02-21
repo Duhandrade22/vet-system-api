@@ -8,7 +8,11 @@ const prisma = new PrismaClient();
 //GET ALL OWNERS
 router.get("/owners", authenticateToken, async (req, res) => {
   try {
-    const owners = await prisma.owner.findMany();
+    const owners = await prisma.owner.findMany({
+      where: {
+        userId: req.userId,
+      },
+    });
     return res.json(owners);
   } catch (error) {
     console.error(error);
