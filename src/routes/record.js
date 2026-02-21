@@ -8,8 +8,22 @@ const prisma = new PrismaClient();
 //GET ALL RECORDS
 router.get("/records", authenticateToken, async (req, res) => {
   try {
-    const records = await prisma.record.findMany();
-
+    const records = await prisma.record.findMany({
+      where: {
+        animal: {
+          owner: {
+            userId: req.userId,
+          },
+        },
+      },
+      include: {
+        animal: {
+          include: {
+            owner: true,
+          },
+        },
+      },
+    });
     const formattedRecords = records.map((record) => ({
       ...record,
       attendedAt: new Date(record.attendedAt).toLocaleDateString("pt-BR"),

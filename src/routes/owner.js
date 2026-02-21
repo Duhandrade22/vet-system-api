@@ -63,7 +63,9 @@ router.post("/owners", authenticateToken, async (req, res) => {
 router.get("/owners/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const owner = await prisma.owner.findUnique({ where: { id } });
+    const owner = await prisma.owner.findUnique({
+      where: { id, userId: req.userId },
+    });
     if (!owner) {
       return res.status(404).json({ error: "Dono não encontrado" });
     }
@@ -105,10 +107,10 @@ router.patch("/owners/:id", authenticateToken, async (req, res) => {
 
     const owner = await prisma.owner.update({
       data,
-      where: { id },
+      where: { id, userId: req.userId },
     });
 
-    return res.status(200).json({ message: "Dados atualizado com sucesso" });
+    return res.json(owner);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
@@ -119,7 +121,9 @@ router.patch("/owners/:id", authenticateToken, async (req, res) => {
 router.delete("/owners/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const owner = await prisma.owner.findUnique({ where: { id } });
+    const owner = await prisma.owner.findUnique({
+      where: { id, userId: req.userId },
+    });
     if (!owner) {
       return res.status(404).json({ error: "Dono não encontrado" });
     }

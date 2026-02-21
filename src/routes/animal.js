@@ -8,7 +8,16 @@ const prisma = new PrismaClient();
 //GET ALL ANIMALS
 router.get("/animals", authenticateToken, async (req, res) => {
   try {
-    const animals = await prisma.animal.findMany();
+    const animals = await prisma.animal.findMany({
+      where: {
+        owner: {
+          userId: req.userId,
+        },
+      },
+      include: {
+        owner: true,
+      },
+    });
     return res.json(animals);
   } catch (error) {
     console.error(error);
