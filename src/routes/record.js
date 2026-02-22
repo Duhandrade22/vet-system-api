@@ -24,12 +24,8 @@ router.get("/records", authenticateToken, async (req, res) => {
         },
       },
     });
-    const formattedRecords = records.map((record) => ({
-      ...record,
-      attendedAt: new Date(record.attendedAt).toLocaleDateString("pt-BR"),
-    }));
 
-    return res.json(formattedRecords);
+    return res.json(records);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
