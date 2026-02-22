@@ -56,7 +56,7 @@ router.get("/animals/:id", authenticateToken, async (req, res) => {
     const { id } = req.params;
     const animal = await prisma.animal.findFirst({
       where: { id, owner: { userId: req.userId } },
-      include: { owner: true },
+      include: { owner: { select: { id: true, name: true } } },
     });
     if (!animal) {
       return res.status(404).json({ error: "Animal não encontrado" });
