@@ -16,6 +16,7 @@ router.get("/animals", authenticateToken, async (req, res) => {
       },
       include: {
         owner: true,
+        records: true,
       },
     });
     return res.json(animals);
