@@ -13,7 +13,7 @@ router.get("/owners", authenticateToken, async (req, res) => {
         userId: req.userId,
       },
       include: {
-        animal: true,
+        animals: true,
       },
     });
     return res.json(owners);
