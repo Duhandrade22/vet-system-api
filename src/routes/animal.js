@@ -54,14 +54,14 @@ router.post("/animals", authenticateToken, async (req, res) => {
 router.get("/animals/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const animal = await prisma.animal.findUnique({
-      where: { id },
+    const animal = await prisma.animal.findFirst({
+      where: { id, owner: { userId: req.userId } },
       include: { owner: true },
     });
     if (!animal) {
       return res.status(404).json({ error: "Animal não encontrado" });
     }
-    return res.status(201).json(animal);
+    return res.json(animal);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
