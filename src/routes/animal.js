@@ -54,7 +54,10 @@ router.post("/animals", authenticateToken, async (req, res) => {
 router.get("/animals/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const animal = await prisma.animal.findUnique({ where: { id } });
+    const animal = await prisma.animal.findUnique({
+      where: { id },
+      include: { owner: true },
+    });
     if (!animal) {
       return res.status(404).json({ error: "Animal não encontrado" });
     }
