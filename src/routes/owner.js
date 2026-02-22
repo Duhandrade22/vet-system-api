@@ -12,6 +12,9 @@ router.get("/owners", authenticateToken, async (req, res) => {
       where: {
         userId: req.userId,
       },
+      include: {
+        animals: true,
+      },
     });
     return res.json(owners);
   } catch (error) {
