@@ -29,18 +29,33 @@ router.get("/animals", authenticateToken, async (req, res) => {
 //CREATE ANIMAL
 router.post("/animals", authenticateToken, async (req, res) => {
   try {
-    const { name, species, breed, ownerId } = req.body;
+    const { name, species, breed, birthDate, ownerId } = req.body;
     const owner = await prisma.owner.findUnique({ where: { id: ownerId } });
     if (!owner) {
-      return res.status(404).json({ error: "Dono não encontrado" });
+      return res.status(404).json({ error: "Tutor não encontrado" });
     }
     if (owner.userId !== req.userId) {
       return res.status(403).json({
         error: "Você não tem permissão para criar um animal para este tutor",
       });
     }
+    if (birthDate) {
+      const birth = new Date(birthDate);
+      const today = new Date();
+      if (birth > today) {
+        return res
+          .status(400)
+          .json({ error: "A data de nascimento não pode ser no futuro" });
+      }
+    }
     const animal = await prisma.animal.create({
-      data: { name, species, breed, ownerId },
+      data: {
+        name,
+        species,
+        breed,
+        birthDate: birthDate ? new Date(birthDate) : null,
+        ownerId,
+      },
     });
 
     return res.status(201).json(animal);
@@ -72,11 +87,18 @@ router.get("/animals/:id", authenticateToken, async (req, res) => {
 router.patch("/animals/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, species, breed } = req.body;
+    const { name, species, birthDate, breed } = req.body;
+
+    console.log("Body recebido:", req.body);
+    console.log("birthDate:", birthDate);
+    console.log("birthDate type:", typeof birthDate);
+
     const data = {};
     if (name) data.name = name;
     if (species) data.species = species;
     if (breed) data.breed = breed;
+    if (birthDate !== undefined)
+      data.birthDate = birthDate ? new Date(birthDate) : null;
     const animal = await prisma.animal.update({
       data,
       where: { id },

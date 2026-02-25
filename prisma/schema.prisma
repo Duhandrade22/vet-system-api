@@ -40,6 +40,7 @@ model Animal {
   name      String
   species   String
   breed     String?
+  birthDate DateTime?
   ownerId   String
   owner   Owner     @relation(fields: [ownerId], references: [id])
   records   Record[]
