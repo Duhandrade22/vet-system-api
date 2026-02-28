@@ -194,7 +194,6 @@ router.get("/records/:id/pdf", authenticateToken, async (req, res) => {
     doc.moveDown(1.5);
 
     //INFORMAÇÕES DO TUTOR
-
     doc
       .fontSize(14)
       .font("Helvetica-Bold")
