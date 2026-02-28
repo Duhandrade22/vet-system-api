@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import express from "express";
 import { authenticateToken } from "../middleware/auth.js";
+import { upload, uploadToCloudinary } from "../middleware/upload.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -88,5 +89,26 @@ router.delete("/users/:id", authenticateToken, async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
+
+//UPLOAD USER IMAGE
+router.post(
+  "/users/:id/image",
+  authenticateToken,
+  upload.single("image"),
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "Nenhuma imagem enviada" });
+    }
+
+    const imageUrl = await uploadToCloudinary(req.file.buffer, "users");
+
+    const updated = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { imageUrl },
+      select: { id: true, name: true, email: true, imageUrl: true },
+    });
+    return res.json(updated);
+  },
+);
 
 export default router;

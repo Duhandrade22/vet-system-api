@@ -13,6 +13,7 @@ model User {
   name      String
   email     String   @unique
   password  String
+  imageUrl  String?
   createdAt DateTime @default(now())
   owners    Owner[]
 }
@@ -53,6 +54,7 @@ model Record {
   medications String
   dosage    String
   notes     String
+  imageUrl  String[]
   attendedAt  DateTime
   animalId  String
   animal    Animal    @relation(fields: [animalId], references: [id])
