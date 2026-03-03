@@ -29,7 +29,7 @@ router.get("/animals", authenticateToken, async (req, res) => {
 //CREATE ANIMAL
 router.post("/animals", authenticateToken, async (req, res) => {
   try {
-    const { name, species, breed, birthDate, ownerId } = req.body;
+    const { name, species, breed, birthDate, ownerId, sex } = req.body;
     const owner = await prisma.owner.findUnique({ where: { id: ownerId } });
     if (!owner) {
       return res.status(404).json({ error: "Tutor não encontrado" });
@@ -55,6 +55,7 @@ router.post("/animals", authenticateToken, async (req, res) => {
         breed,
         birthDate: birthDate ? new Date(birthDate) : null,
         ownerId,
+        sex,
       },
     });
 
@@ -87,16 +88,13 @@ router.get("/animals/:id", authenticateToken, async (req, res) => {
 router.patch("/animals/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, species, birthDate, breed } = req.body;
-
-    console.log("Body recebido:", req.body);
-    console.log("birthDate:", birthDate);
-    console.log("birthDate type:", typeof birthDate);
+    const { name, species, birthDate, breed, sex } = req.body;
 
     const data = {};
     if (name) data.name = name;
     if (species) data.species = species;
     if (breed) data.breed = breed;
+    if (sex) data.sex = sex;
     if (birthDate !== undefined)
       data.birthDate = birthDate ? new Date(birthDate) : null;
     const animal = await prisma.animal.update({
