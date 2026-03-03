@@ -16,6 +16,7 @@ model User {
   imageUrl  String?
   createdAt DateTime @default(now())
   owners    Owner[]
+  prescription  Prescription[]
 }
 
 model Owner {
@@ -42,9 +43,11 @@ model Animal {
   species   String
   breed     String?
   birthDate DateTime?
+  sex       String?
   ownerId   String
   owner   Owner     @relation(fields: [ownerId], references: [id])
   records   Record[]
+  prescription  Prescription[]
   createdAt DateTime @default(now())
 }
 
@@ -58,5 +61,20 @@ model Record {
   attendedAt  DateTime
   animalId  String
   animal    Animal    @relation(fields: [animalId], references: [id])
+  prescription Prescription?
   createdAt DateTime @default(now())
+}
+
+model Prescription {
+  id        String    @id @default(uuid())
+  content   String
+  weight    String
+  attendedAt  DateTime
+  animalId  String
+  animal    Animal    @relation(fields: [animalId], references: [id])
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  recordId  String    @unique
+  record    Record    @relation(fields: [recordId], references: [id])
+  createdAt DateTime  @default(now())
 }

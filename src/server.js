@@ -6,6 +6,7 @@ import helmet from "helmet";
 import animalRoutes from "./routes/animal.js";
 import authRoutes from "./routes/auth.js";
 import ownerRoutes from "./routes/owner.js";
+import prescriptionRoutes from "./routes/prescription.js";
 import recordRoutes from "./routes/record.js";
 import userRoutes from "./routes/user.js";
 dotenv.config();
@@ -38,6 +39,7 @@ app.use("/", userRoutes);
 app.use("/", ownerRoutes);
 app.use("/", animalRoutes);
 app.use("/", recordRoutes);
+app.use("/", prescriptionRoutes);
 
 app.get("/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
