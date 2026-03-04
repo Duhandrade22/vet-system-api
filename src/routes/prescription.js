@@ -124,35 +124,45 @@ router.get(
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = path.dirname(__filename);
 
-      const cardX = 50;
-      const cardY = 50;
-      const cardWidth = 495;
-      const cardHeight = 700;
-      const radius = 12;
-
-      doc
-        .roundedRect(cardX, cardY, cardWidth, cardHeight, radius)
-        .strokeColor("#000000")
-        .lineWidth(1.5)
-        .stroke();
-
+      // LOGO
       const logoPath = path.join(__dirname, "..", "assets", "logo.jpg");
       if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, cardX + cardWidth / 2 - 40, cardY + 15, {
-          width: 80,
-          align: "center",
-        });
+        doc.image(logoPath, 50 + 495 / 2 - 40, 50, { width: 80 });
+        doc.moveDown(4.5);
       }
 
-      // NOME DO VET
+      // CABEÇALHO
+      doc
+        .fontSize(18)
+        .font("Helvetica-Bold")
+        .text("RECEITA VETERINÁRIA", { align: "center" })
+        .moveDown(0.5);
+
+      doc
+        .fontSize(10)
+        .font("Helvetica")
+        .text(
+          `Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
+          { align: "center" },
+        )
+        .moveDown(2);
+
+      // LINHA DE SEPARAÇÃO
+      doc
+        .strokeColor("#4A90E2")
+        .lineWidth(2)
+        .moveTo(50, doc.y)
+        .lineTo(550, doc.y)
+        .stroke()
+        .moveDown(1);
+
+      // DADOS DO ANIMAL
       doc
         .fontSize(14)
         .font("Helvetica-Bold")
-        .fillColor("#000000")
-        .text(prescription.user.name.toUpperCase(), cardX, cardY + 105, {
-          width: cardWidth,
-          align: "center",
-        });
+        .fillColor("#333333")
+        .text("DADOS DO ANIMAL", { underline: true })
+        .moveDown(0.5);
 
       // CALCULAR IDADE
       let idade = "Não informada";
@@ -173,65 +183,97 @@ router.get(
         }
       }
 
-      // DADOS - COLUNA ESQUERDA E DIREITA
-      const leftX = cardX + 20;
-      const rightX = cardX + cardWidth / 2 + 10;
-      const dataY = cardY + 80;
-      const lineHeight = 22;
-
-      const leftData = [
-        ["TUTOR:", prescription.animal.owner.name],
-        ["PACIENTE:", prescription.animal.name],
-        ["RAÇA:", prescription.animal.breed || "Não informada"],
+      const animalData = [
+        ["Nome:", prescription.animal.name],
+        ["Espécie:", prescription.animal.species],
+        ["Raça:", prescription.animal.breed || "Não informada"],
+        ["Idade:", idade],
+        ["Sexo:", prescription.animal.sex || "Não informado"],
       ];
 
-      const rightData = [
-        ["ESPÉCIE:", prescription.animal.species],
-        ["IDADE:", idade],
-        ["PESO:", prescription.weight],
-        ["SEXO:", prescription.animal.sex || "Não informado"],
-      ];
-
-      doc.fontSize(11);
-      leftData.forEach(([label, value], i) => {
+      doc.fontSize(12);
+      animalData.forEach(([label, value]) => {
         doc
           .font("Helvetica-Bold")
-          .fillColor("#000000")
-          .text(label, leftX, dataY + i * lineHeight, { continued: true })
+          .text(label, { continued: true })
           .font("Helvetica")
           .text(` ${value}`);
       });
 
-      rightData.forEach(([label, value], i) => {
+      doc.moveDown(1.5);
+
+      // DADOS DO TUTOR
+      doc
+        .fontSize(14)
+        .font("Helvetica-Bold")
+        .text("DADOS DO TUTOR", { underline: true })
+        .moveDown(0.5);
+
+      doc.fontSize(12);
+      [
+        ["Nome:", prescription.animal.owner.name],
+      ].forEach(([label, value]) => {
         doc
           .font("Helvetica-Bold")
-          .fillColor("#000000")
-          .text(label, rightX, dataY + i * lineHeight, { continued: true })
+          .text(label, { continued: true })
           .font("Helvetica")
           .text(` ${value}`);
       });
 
-      // CAIXA DO CONTEÚDO DA RECEITA
-      const boxX = cardX + 20;
-      const boxY = cardY + 200;
-      const boxWidth = cardWidth - 40;
-      const boxHeight = 430;
+      doc.moveDown(2);
+
+      // DADOS DA RECEITA
+      doc
+        .fontSize(14)
+        .font("Helvetica-Bold")
+        .text("RECEITA", { underline: true })
+        .moveDown(1);
 
       doc
-        .roundedRect(boxX, boxY, boxWidth, boxHeight, 8)
-        .strokeColor("#000000")
-        .lineWidth(1)
-        .stroke();
-
-      doc
-        .fontSize(11)
+        .fontSize(12)
+        .font("Helvetica-Bold")
+        .fillColor("#4A90E2")
+        .text("Data do Atendimento: ", { continued: true })
         .font("Helvetica")
-        .fillColor("#000000")
-        .text(prescription.content, boxX + 10, boxY + 10, {
-          width: boxWidth - 20,
-          height: boxHeight - 20,
-          align: "left",
-        });
+        .fillColor("#333333")
+        .text(new Date(prescription.attendedAt).toLocaleString("pt-BR"));
+
+      doc.moveDown(0.5);
+
+      doc
+        .font("Helvetica-Bold")
+        .text("Peso: ", { continued: true })
+        .font("Helvetica")
+        .text(prescription.weight);
+
+      doc.moveDown(1);
+
+      doc.fontSize(12).font("Helvetica-Bold").text("Prescrição:");
+
+      doc.fontSize(11).font("Helvetica").text(prescription.content, {
+        width: 500,
+        align: "justify",
+      });
+
+      doc.moveDown(10);
+
+      // NOME DO VETERINÁRIO
+      doc
+        .fontSize(10)
+        .fillColor("#333333")
+        .text("_".repeat(50), { align: "center" })
+        .moveDown(0.3)
+        .text(prescription.user.name, { align: "center" })
+        .moveDown(0.2)
+        .text("Médico(a) Veterinário(a) Responsável", { align: "center" });
+
+      doc.moveDown(2);
+
+      // RODAPÉ
+      doc
+        .fontSize(8)
+        .fillColor("#999999")
+        .text("Vetly - Sistema de Gestão Veterinária", { align: "center" });
 
       doc.end();
     } catch (error) {
