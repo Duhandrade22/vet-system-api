@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import express from "express";
+import fs from "fs";
 import path from "path";
 import PDFDocument from "pdfkit";
 import { fileURLToPath } from "url";
@@ -135,11 +136,13 @@ router.get(
         .lineWidth(1.5)
         .stroke();
 
-      const logoPath = path.join(__dirname, "..", "assets", "logo.png");
-      doc.image(logoPath, cardX + cardWidth / 2 - 40, cardY + 15, {
-        width: 80,
-        align: "center",
-      });
+      const logoPath = path.join(__dirname, "..", "assets", "logo.jpg");
+      if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, cardX + cardWidth / 2 - 40, cardY + 15, {
+          width: 80,
+          align: "center",
+        });
+      }
 
       // NOME DO VET
       doc
