@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import express from "express";
+import fs from "fs";
+import path from "path";
 import PDFDocument from "pdfkit";
+import { fileURLToPath } from "url";
 import { authenticateToken } from "../middleware/auth.js";
 import { upload, uploadToCloudinary } from "../middleware/upload.js";
 
@@ -124,196 +127,206 @@ router.post(
     return res.json({ imageUrl: updated.imageUrl });
   },
 );
-  // PDF DOWNLOAD
-  router.get("/records/:id/pdf", authenticateToken, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const record = await prisma.record.findFirst({
-        where: { id, animal: { owner: { userId: req.userId } } },
-        include: {
-          animal: {
-            include: {
-              owner: {
-                select: {
-                  name: true,
-                  phone: true,
-                  email: true,
-                },
+// PDF DOWNLOAD
+router.get("/records/:id/pdf", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const record = await prisma.record.findFirst({
+      where: { id, animal: { owner: { userId: req.userId } } },
+      include: {
+        animal: {
+          include: {
+            owner: {
+              select: {
+                name: true,
+                phone: true,
+                email: true,
               },
             },
           },
         },
-      });
-      if (!record) {
-        return res.status(404).json({ error: "Prontuário não encontrado" });
-      }
+      },
+    });
+    if (!record) {
+      return res.status(404).json({ error: "Prontuário não encontrado" });
+    }
 
-      // CRIA O PDF
-      const doc = new PDFDocument({
-        margin: 50,
-        size: "A4",
-      });
+    // CRIA O PDF
+    const doc = new PDFDocument({
+      margin: 50,
+      size: "A4",
+    });
 
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="prontuario-${record.animal.name}-${new Date(record.attendedAt).toLocaleDateString("pt-BR").replace(/\//g, "-")}.pdf"`,
-      );
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="prontuario-${record.animal.name}-${new Date(record.attendedAt).toLocaleDateString("pt-BR").replace(/\//g, "-")}.pdf"`,
+    );
 
-      doc.pipe(res);
+    doc.pipe(res);
 
-      //CONTEÚDO DO PDF
+    //CONTEÚDO DO PDF
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
 
-      // CABEÇALHO
+    // LOGO
+    const logoPath = path.join(__dirname, "..", "assets", "logo.jpg");
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, 50 + 495 / 2 - 100, 50, { width: 200 });
+      doc.moveDown(8);
+    }
+
+    // CABEÇALHO
+    doc
+      .fontSize(18)
+      .font("Helvetica-Bold")
+      .text("PRONTUÁRIO DE ATENDIMENTO", { align: "center" })
+      .moveDown(0.5);
+
+    doc
+      .fontSize(10)
+      .font("Helvetica")
+      .text(
+        `Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
+        { align: "center" },
+      )
+      .moveDown(2);
+
+    //LINHA DE SEPARAÇÃO
+    doc
+      .strokeColor("#134e4a")
+      .lineWidth(2)
+      .moveTo(50, doc.y)
+      .lineTo(550, doc.y)
+      .stroke()
+      .moveDown(1);
+
+    //INFORMAÇÕES DO ANIMAL
+    doc
+      .fontSize(14)
+      .font("Helvetica-Bold")
+      .fillColor("#333333")
+      .text("DADOS DO ANIMAL", { underline: true })
+      .moveDown(0.5);
+
+    doc.fontSize(12).font("Helvetica");
+
+    const animalData = [
+      ["Nome:", record.animal.name],
+      ["Espécie:", record.animal.species],
+      ["Raça:", record.animal.breed || "Não informada"],
+      [
+        "Data de Nascimento:",
+        record.animal.birthDate
+          ? new Date(record.animal.birthDate).toLocaleDateString("pt-BR")
+          : "Não informada",
+      ],
+    ];
+
+    animalData.forEach(([label, value]) => {
       doc
-        .fontSize(18)
         .font("Helvetica-Bold")
-        .text("PRONTUÁRIO DE ATENDIMENTO", { align: "center" })
-        .moveDown(0.5);
-
-      doc
-        .fontSize(10)
+        .text(label, { continued: true })
         .font("Helvetica")
-        .text(
-          `Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
-          { align: "center" },
-        )
-        .moveDown(2);
+        .text(` ${value}`);
+    });
 
-      //LINHA DE SEPARAÇÃO
-      doc
-        .strokeColor("#4A90E2")
-        .lineWidth(2)
-        .moveTo(50, doc.y)
-        .lineTo(550, doc.y)
-        .stroke()
-        .moveDown(1);
+    doc.moveDown(1.5);
 
-      //INFORMAÇÕES DO ANIMAL
+    //INFORMAÇÕES DO TUTOR
+    doc
+      .fontSize(14)
+      .font("Helvetica-Bold")
+      .text("DADOS DO TUTOR", { underline: true })
+      .moveDown(0.5);
+
+    doc.fontSize(12).font("Helvetica");
+
+    const ownerData = [
+      ["Nome:", record.animal.owner.name],
+      ["Telefone:", record.animal.owner.phone],
+      ["Email:", record.animal.owner.email || "Não informado"],
+    ];
+
+    ownerData.forEach(([label, value]) => {
       doc
-        .fontSize(14)
         .font("Helvetica-Bold")
-        .fillColor("#333333")
-        .text("DADOS DO ANIMAL", { underline: true })
-        .moveDown(0.5);
+        .text(label, { continued: true })
+        .font("Helvetica")
+        .text(` ${value}`);
+    });
 
-      doc.fontSize(12).font("Helvetica");
+    doc.moveDown(2);
 
-      const animalData = [
-        ["Nome:", record.animal.name],
-        ["Espécie:", record.animal.species],
-        ["Raça:", record.animal.breed || "Não informada"],
-        [
-          "Data de Nascimento:",
-          record.animal.birthDate
-            ? new Date(record.animal.birthDate).toLocaleDateString("pt-BR")
-            : "Não informada",
-        ],
-      ];
+    //INFORMAÇÕES DO ATENDIMENTO
+    doc
+      .fontSize(14)
+      .font("Helvetica-Bold")
+      .text("DADOS DO ATENDIMENTO", { underline: true })
+      .moveDown(1);
 
-      animalData.forEach(([label, value]) => {
-        doc
-          .font("Helvetica-Bold")
-          .text(label, { continued: true })
-          .font("Helvetica")
-          .text(` ${value}`);
-      });
+    doc
+      .fontSize(12)
+      .font("Helvetica-Bold")
+      .fillColor("#4338ca")
+      .text(`Data do Atendimento: `, { continued: true })
+      .font("Helvetica")
+      .fillColor("#333333")
+      .text(new Date(record.attendedAt).toLocaleString("pt-BR"));
 
-      doc.moveDown(1.5);
+    doc.moveDown(1);
 
-      //INFORMAÇÕES DO TUTOR
-      doc
-        .fontSize(14)
-        .font("Helvetica-Bold")
-        .text("DADOS DO TUTOR", { underline: true })
-        .moveDown(0.5);
+    const recordData = [
+      ["Peso:", `${record.weight}`],
+      ["Medicamentos:", record.medications],
+      ["Dosagem:", record.dosage],
+    ];
 
-      doc.fontSize(12).font("Helvetica");
-
-      const ownerData = [
-        ["Nome:", record.animal.owner.name],
-        ["Telefone:", record.animal.owner.phone],
-        ["Email:", record.animal.owner.email || "Não informado"],
-      ];
-
-      ownerData.forEach(([label, value]) => {
-        doc
-          .font("Helvetica-Bold")
-          .text(label, { continued: true })
-          .font("Helvetica")
-          .text(` ${value}`);
-      });
-
-      doc.moveDown(2);
-
-      //INFORMAÇÕES DO ATENDIMENTO
-      doc
-        .fontSize(14)
-        .font("Helvetica-Bold")
-        .text("DADOS DO ATENDIMENTO", { underline: true })
-        .moveDown(1);
-
+    recordData.forEach(([label, value]) => {
       doc
         .fontSize(12)
         .font("Helvetica-Bold")
-        .fillColor("#4A90E2")
-        .text(`Data do Atendimento: `, { continued: true })
+        .text(label, { continued: true })
         .font("Helvetica")
-        .fillColor("#333333")
-        .text(new Date(record.attendedAt).toLocaleString("pt-BR"));
+        .text(` ${value}`);
+    });
 
-      doc.moveDown(1);
+    doc.moveDown(1);
 
-      const recordData = [
-        ["Peso:", `${record.weight}`],
-        ["Medicamentos:", record.medications],
-        ["Dosagem:", record.dosage],
-      ];
+    doc.fontSize(12).font("Helvetica-Bold").text("Observações:");
 
-      recordData.forEach(([label, value]) => {
-        doc
-          .fontSize(12)
-          .font("Helvetica-Bold")
-          .text(label, { continued: true })
-          .font("Helvetica")
-          .text(` ${value}`);
-      });
+    doc.fontSize(11).font("Helvetica").text(record.notes, {
+      width: 500,
+      align: "justify",
+    });
 
-      doc.moveDown(1);
+    doc.moveDown(10);
 
-      doc.fontSize(12).font("Helvetica-Bold").text("Observações:");
+    //ASSINATURA
+    doc
+      .fontSize(10)
+      .fillColor("#333333")
+      .text("_".repeat(50), { align: "center" })
+      .moveDown(0.3)
+      .moveDown(0.2)
+      .text("Médico(a) Veterinário(a) Responsável", { align: "center" });
 
-      doc.fontSize(11).font("Helvetica").text(record.notes, {
-        width: 500,
-        align: "justify",
-      });
+    doc.moveDown(2);
 
-      doc.moveDown(10);
+    // RODAPE
+    doc
+      .fontSize(8)
+      .fillColor("#999999")
+      .text("Vetly - Sistema de Gestão Veterinária", { align: "center" });
 
-      //ASSINATURA
-      doc
-        .fontSize(10)
-        .text("_".repeat(50), { align: "center" })
-        .moveDown(0.3)
-        .text("Assinatura do Veterinário Responsável", { align: "center" });
+    doc.end();
+  } catch (error) {
+    console.error("Erro ao gerar PDF:", error);
 
-      doc.moveDown(10); // Espaço extra
-
-      // RODAPE
-      doc
-        .fontSize(8)
-        .fillColor("#999999")
-        .text("Vetly - Sistema de Gestão Veterinária", { align: "center" });
-
-      doc.end();
-    } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
-
-      if (!res.headersSent) {
-        return res.status(500).json({ error: error.message });
-      }
+    if (!res.headersSent) {
+      return res.status(500).json({ error: error.message });
     }
   }
-);
+});
 
 export default router;

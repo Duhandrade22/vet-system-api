@@ -127,8 +127,8 @@ router.get(
       // LOGO
       const logoPath = path.join(__dirname, "..", "assets", "logo.jpg");
       if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, 50 + 495 / 2 - 40, 50, { width: 80 });
-        doc.moveDown(4.5);
+        doc.image(logoPath, 50 + 495 / 2 - 100, 50, { width: 200 });
+        doc.moveDown(8);
       }
 
       // CABEÇALHO
@@ -149,20 +149,20 @@ router.get(
 
       // LINHA DE SEPARAÇÃO
       doc
-        .strokeColor("#4A90E2")
+        .strokeColor("#134e4a")
         .lineWidth(2)
         .moveTo(50, doc.y)
         .lineTo(550, doc.y)
         .stroke()
-        .moveDown(1);
+        .moveDown(2);
 
       // DADOS DO ANIMAL
       doc
         .fontSize(14)
         .font("Helvetica-Bold")
         .fillColor("#333333")
-        .text("DADOS DO ANIMAL", { underline: true })
-        .moveDown(0.5);
+        .text("DADOS DO ANIMAL", { underline: true, align: "center" })
+        .moveDown(1);
 
       // CALCULAR IDADE
       let idade = "Não informada";
@@ -188,39 +188,32 @@ router.get(
         ["Espécie:", prescription.animal.species],
         ["Raça:", prescription.animal.breed || "Não informada"],
         ["Idade:", idade],
+        ["Peso:", prescription.weight],
         ["Sexo:", prescription.animal.sex || "Não informado"],
+        ["Tutor:", prescription.animal.owner.name],
       ];
 
       doc.fontSize(12);
-      animalData.forEach(([label, value]) => {
+      const col1X = 70;
+      const col2X = 320;
+      let rowY = doc.y;
+      const rowH = 20;
+
+      animalData.forEach(([label, value], i) => {
+        const x = i % 2 === 0 ? col1X : col2X;
         doc
           .font("Helvetica-Bold")
-          .text(label, { continued: true })
+          .text(label, x, rowY, { continued: true })
           .font("Helvetica")
           .text(` ${value}`);
+        if (i % 2 === 1) rowY += rowH;
       });
 
+      // se número ímpar de itens, avança a linha do último item solitário
+      if (animalData.length % 2 !== 0) rowY += rowH;
+
+      doc.y = rowY;
       doc.moveDown(1.5);
-
-      // DADOS DO TUTOR
-      doc
-        .fontSize(14)
-        .font("Helvetica-Bold")
-        .text("DADOS DO TUTOR", { underline: true })
-        .moveDown(0.5);
-
-      doc.fontSize(12);
-      [
-        ["Nome:", prescription.animal.owner.name],
-      ].forEach(([label, value]) => {
-        doc
-          .font("Helvetica-Bold")
-          .text(label, { continued: true })
-          .font("Helvetica")
-          .text(` ${value}`);
-      });
-
-      doc.moveDown(2);
 
       // DADOS DA RECEITA
       doc
@@ -230,21 +223,13 @@ router.get(
         .moveDown(1);
 
       doc
-        .fontSize(12)
+        .fontSize(14)
         .font("Helvetica-Bold")
-        .fillColor("#4A90E2")
+        .fillColor("#4338ca")
         .text("Data do Atendimento: ", { continued: true })
         .font("Helvetica")
         .fillColor("#333333")
         .text(new Date(prescription.attendedAt).toLocaleString("pt-BR"));
-
-      doc.moveDown(0.5);
-
-      doc
-        .font("Helvetica-Bold")
-        .text("Peso: ", { continued: true })
-        .font("Helvetica")
-        .text(prescription.weight);
 
       doc.moveDown(1);
 
