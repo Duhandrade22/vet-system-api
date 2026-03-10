@@ -8,15 +8,39 @@ const prisma = new PrismaClient();
 //GET ALL OWNERS
 router.get("/owners", authenticateToken, async (req, res) => {
   try {
-    const owners = await prisma.owner.findMany({
-      where: {
-        userId: req.userId,
-      },
-      include: {
-        animals: true,
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const [owners, total] = await Promise.all([
+      prisma.owner.findMany({
+        where: {
+          userId: req.userId,
+        },
+        include: {
+          animals: true,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          name: "asc",
+        },
+      }),
+      prisma.owner.count({
+        where: {
+          userId: req.userId,
+        },
+      }),
+    ]);
+
+    return res.json({
+      data: owners,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
     });
-    return res.json(owners);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
