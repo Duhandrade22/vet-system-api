@@ -11,11 +11,21 @@ router.get("/owners", authenticateToken, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const search = req.query.search || "";
+    const where = {
+      userId: req.userId,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { phone: { contains: search, mode: "insensitive" } },
+        ],
+      }),
+    };
+
     const [owners, total] = await Promise.all([
       prisma.owner.findMany({
-        where: {
-          userId: req.userId,
-        },
+        where,
         include: {
           animals: true,
         },
@@ -26,9 +36,7 @@ router.get("/owners", authenticateToken, async (req, res) => {
         },
       }),
       prisma.owner.count({
-        where: {
-          userId: req.userId,
-        },
+        where,
       }),
     ]);
 
