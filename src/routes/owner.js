@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import express from "express";
 import { authenticateToken } from "../middleware/auth.js";
+import { emailDomainExists } from "../utils/emailDomainExists.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -71,6 +72,13 @@ router.post("/owners", authenticateToken, async (req, res) => {
       zipCode,
     } = req.body;
 
+    if (email) {
+      const domainExists = await emailDomainExists(email);
+      if (!domainExists) {
+        return res.status(400).json({ error: "Domínio de email inválido" });
+      }
+    }
+
     const owner = await prisma.owner.create({
       data: {
         name,
@@ -127,6 +135,13 @@ router.patch("/owners/:id", authenticateToken, async (req, res) => {
       state,
       zipCode,
     } = req.body;
+
+    if (email) {
+      const domainExists = await emailDomainExists(email);
+      if (!domainExists) {
+        return res.status(400).json({ error: "Domínio de email inválido" });
+      }
+    }
 
     const data = {};
     if (name) data.name = name;

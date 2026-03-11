@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import express from "express";
 import { authenticateToken } from "../middleware/auth.js";
 import { upload, uploadToCloudinary } from "../middleware/upload.js";
+import { emailDomainExists } from "../utils/emailDomainExists.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -22,6 +23,13 @@ router.get("/users", authenticateToken, async (req, res) => {
 router.post("/users", async (req, res) => {
   try {
     const { name, email, password } = req.body;
+
+    if (email) {
+      const domainExists = await emailDomainExists(email);
+      if (!domainExists) {
+        return res.status(400).json({ error: "Domínio de email inválido" });
+      }
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -62,6 +70,13 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
     const data = {};
     if (name) data.name = name;
     if (email) data.email = email;
+
+    if (email) {
+      const domainExists = await emailDomainExists(email);
+      if (!domainExists) {
+        return res.status(400).json({ error: "Domínio de email inválido" });
+      }
+    }
 
     const user = await prisma.user.update({
       data,
